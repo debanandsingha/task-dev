@@ -18,6 +18,16 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
         console.error("Error connecting to database: ", err.message);
     } else {
         console.log("Connected to the SQLite database.");
+        // Create users table if it doesn't exist
+        db.run(`CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            password TEXT NOT NULL
+        )`, (err) => {
+            if (err) {
+                console.error("Error creating users table: ", err.message);
+            }
+        });
     }
 });
 
@@ -30,7 +40,8 @@ const server = http.createServer((req, res) => {
 
     // Basic route handling
     if (req.method === 'GET' && req.url === '/api/data') {
-        const sql = 'SELECT * FROM users';
+        const sql = "SELECT * from users";
+        //List all tables in database: SELECT name FROM sqlite_master WHERE type='table'
         db.all(sql, [], (err, rows) => {
             if (err) {
                 console.error("Error executing SQL query: ", err.message);
@@ -38,6 +49,7 @@ const server = http.createServer((req, res) => {
                 res.end(JSON.stringify({ error: err.message }));
                 return;
             }
+            console.log("/GET /api/data");
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ data: rows }));
         });
@@ -49,7 +61,7 @@ const server = http.createServer((req, res) => {
         req.on('end', () => {
             try {
                 const data = JSON.parse(body);
-                const sql = 'INSERT INTO user (username, password) VALUES (?, ?)';
+                const sql = 'INSERT INTO users (username, password) VALUES (?, ?)';
                 const params = [data.username, data.password];
                 db.run(sql, params, function(err) {
                     if (err) {
@@ -74,10 +86,10 @@ const server = http.createServer((req, res) => {
 });
 
 // Start the server
-server.listen(3000, (err) => {
+server.listen(3001, (err) => {
     if (err) {
         console.error("Error starting the server: ", err.message);
     } else {
-        console.log('Server is listening on port 3000');
+        console.log('Server is listening on port 3001');
     }
 });
